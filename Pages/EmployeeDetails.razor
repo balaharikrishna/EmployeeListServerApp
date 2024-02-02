@@ -1,0 +1,124 @@
+﻿@page "/employeeDetails"
+@inject NavigationManager Navigation
+@inject Blazored.Modal.Services.IModalService model
+@using EmployeeInfo.Services
+@inject IEmployeeService EmployeeService
+@using EmployeeInfo.Modals;
+
+@if (isInitialized)
+{
+    <div class="container-fluid">
+        <h3>EmployeeDetails</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">EmployeeId</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">PhoneNumber</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (Employee emps in employees)
+                {
+                    <tr>
+                        <td>@emps.EmployeeId</td>
+                        <td>@emps.Name</td>
+                        <td>@emps.Department</td>
+                        <td>@emps.PhoneNumber</td>
+                        <td>@emps.IsActive</td>
+                        <td><button type="button" @onclick="() => EditEmployee(emps.EmployeeId)" class="btn btn-primary"><Icon Name="IconName.PencilFill" /></button></td>
+                        <td><button type="button" @onclick="() => DeleteEmployee(emps.EmployeeId)"  class="btn btn-danger"><Icon Name="IconName.TrashFill" /></button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="row">
+            <button type="button" @onclick=AddEmployeeDetails class="btn btn-primary">Add Employee</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+}
+
+<div style="display:none">
+    <AddEmployeeForm OnButtonClick="HandleChildButtonClick" />
+</div>
+
+@code {
+
+    [Inject] protected ToastService ToastService { get; set; }
+
+
+    private IEnumerable<Employee> employees;
+    private bool isInitialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+        await FetchAllEmployees();
+    }
+
+    public void AddEmployeeDetails()
+    {
+        model.Show<AddEmployeeForm>("Add Employees");
+    }
+
+    public async void EditEmployee(string id)
+    {
+        Employee? empDetails = await EmployeeService.GetEmployeeById(id);
+        if (empDetails is not null)
+        {
+            model.Show<AddEmployeeForm>("Edit Employees", new ModalParameters { { "EditModel", empDetails } });
+        }
+    }
+
+    public async void DeleteEmployee(string id)
+    {
+        if(id is not null)
+        {
+            bool status = await EmployeeService.DeleteEmployee(id);
+            if (status)
+            {
+                ToastService.Notify(new(ToastType.Success, $"Employee Deleted successfully."));
+            }
+            else
+            {
+                ToastService.Notify(new(ToastType.Danger, $"Failed to Save Details"));
+            }
+        }
+
+
+    }
+
+    public async Task FetchAllEmployees()
+    {
+        List<Employee> receivedData = await EmployeeService.GetAllEmployees();
+        if (receivedData.Any())
+        {
+            employees = receivedData;
+            isInitialized = true;
+        }
+        else
+        {
+            Console.WriteLine("data not received");
+        }
+    }
+
+
+    private string message;
+
+    private void HandleChildButtonClick(string arg)
+    {
+        // Handle the event from the child component
+        message = arg;
+        Console.WriteLine(message,"message");
+    }
+}
+
+

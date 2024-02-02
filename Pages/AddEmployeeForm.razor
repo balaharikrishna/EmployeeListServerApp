@@ -1,0 +1,142 @@
+﻿@page "/addEmployee"
+@using System.ComponentModel.DataAnnotations
+@using EmployeeInfo.Modals
+@using EmployeeInfo.Services
+@inject IEmployeeService EmployeeService
+
+<EditForm Model="@Model" OnValidSubmit="@Submit" >
+    <DataAnnotationsValidator />
+    <div class="row form-gruop mb-2">
+        <div class="col-4">
+            <label>
+                Employee Id:
+            </label>
+        </div>
+        <div class="col-8">
+            <InputText class="form-control" @bind-Value="Model!.EmployeeId" />
+            <ValidationMessage For="@(() => Model.EmployeeId)" />
+        </div>
+    </div>
+    <div class="row form-gruop mb-2">
+        <div class="col-4">
+            <label>
+                Name:
+            </label>
+        </div>
+        <div class="col-8">
+            <InputText class="form-control" @bind-Value="Model!.Name" />
+            <ValidationMessage For="@(() => Model.Name)" />
+        </div>
+    </div>
+    <div class="row form-gruop mb-2">
+        <div class="col-4">
+            <label>
+                PhoneNumber:
+            </label>
+        </div>
+        <div class="col-8">
+            <InputText class="form-control" @bind-Value="Model!.PhoneNumber" />
+            <ValidationMessage For="@(() => Model.PhoneNumber)" />
+        </div>
+    </div>
+    <div class="row form-gruop mb-2">
+        <div class="col-4">
+            <label>
+                Department:
+            </label>
+        </div>
+        <div class="col-8  mb-1">
+            <InputText class="form-control" @bind-Value="Model!.Department" />
+            <ValidationMessage For="@(() => Model.Department)" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-4">
+            <label>
+                currently working:
+            </label>
+        </div>
+        <div class="col-8 mb-1">
+            <InputCheckbox @bind-Value="Model!.IsActive" />
+            <ValidationMessage For="@(() => Model.IsActive)" />
+        </div>
+    </div>
+    <div>
+        <button class="btn btn-primary float-end" type="submit" @onclick="HandleButtonClick" >@AddAndUpdate</button>
+    </div>
+</EditForm>
+
+@code {
+
+    public Employee Model { get; set; }
+
+    [Parameter]
+    public Employee EditModel { get; set; }
+
+    private bool fetchedEmpDetails { get; set; }
+
+    [Inject] protected ToastService ToastService { get; set; }
+
+    public string? AddAndUpdate;
+
+    [CascadingParameter] IModalService Modal { get; set; } = default!;
+
+
+    protected override void OnInitialized()
+    {
+        AddAndUpdate = "Add";
+        Model = new();
+    }
+
+    private async void Submit()
+    {
+        if (AddAndUpdate == "Add")
+        {
+            bool status = await EmployeeService.AddEmployee(Model);
+            if (status)
+            {
+                ToastService.Notify(new(ToastType.Success, $"Employee details saved successfully."));
+            }
+            else
+            {
+                ToastService.Notify(new(ToastType.Danger, $"Failed to Save Details"));
+            }
+        }
+        else
+        {
+            bool status = await EmployeeService.UpdateEmployee(Model);
+            if (status)
+            {
+                ToastService.Notify(new(ToastType.Success, $"Employee details Updated successfully."));
+            }
+            else
+            {
+                ToastService.Notify(new(ToastType.Danger, $"Failed to Update Details"));
+            }
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (EditModel is not null)
+        {
+            Model.EmployeeId = EditModel.EmployeeId;
+            Model.Name = EditModel.Name;
+            Model.Department = EditModel.Department;
+            Model.PhoneNumber = EditModel.PhoneNumber;
+            Model.IsActive = EditModel.IsActive;
+
+            AddAndUpdate = "Update";
+        }
+    }
+
+    [Parameter] 
+    public EventCallback<string> OnButtonClick { get; set; }
+
+    private async Task HandleButtonClick()
+    {
+        // Raise the event with a custom string value
+        await OnButtonClick.InvokeAsync("Button clicked!");
+    }
+
+}
